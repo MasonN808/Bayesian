@@ -1,1 +1,1 @@
-# Baysian
+# Bayesian
