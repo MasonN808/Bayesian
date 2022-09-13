@@ -1,0 +1,156 @@
+```{r}
+die=c(1:6)
+n=1000000
+t=sample(die, n, replace=TRUE )
+table(t)
+table(t)[1]/n
+
+```
+
+
+
+##===========================================================
+```{r}
+#Plot beta distribution
+x=seq(0,1,0.001)
+a=0.1
+b=0.1
+y=dbeta(x,a,b)
+plot(x,y)
+legend(0.3,15, legend=c("a=0.1", "b=0.1"))
+```
+       
+##===========================================================
+#Anna's, Bart's, and Chris's Prior distributions
+
+```{r}
+#Prior distribution
+
+x=seq(0,1,0.001)
+anna=dbeta(x,4.8,19.2) #Anna's Prior distributions
+bart=dbeta(x,1,1) #bart's Prior distributions
+```
+
+```{r}
+#Chris's Prior distributions : piecewisely defined
+chris=rep(0,length(x))
+for(i in 1:length(x)){
+  if (x[i]<=0.10){
+    chris[i]=20*x[i]
+  }
+  if (x[i]>=0.1 & x[i]<=0.3){
+    chris[i]=2
+  }
+  
+  if (x[i]>=0.3 & x[i]<=0.5){
+    chris[i]=5-10*x[i]
+  }
+}
+```
+
+```{r}
+plot(x,anna,col="red",xlab = "Prior distributions",ylab="")
+lines(x,bart,col="blue")
+lines(x,chris,col="orange")
+legend(0.6,3, legend=c("Anna", "Bart","Chris"),
+       col=c("red","blue","orange"), lty=1:2, cex=0.8)
+```
+
+##===========================================================
+#Posterior distribution
+
+```{r}
+x=seq(0,1,0.001)
+n=100
+y=26
+anna=dbeta(x,4.8+y,19.2+n-y) #Anna's posterior distribution
+bart=dbeta(x,1+y,1+n-y) #bart's posterior distribution
+chris=rep(0,length(x))
+```
+
+#Now we find Chris's posterior distribution numerically
+#step 1 :define Chris's prior piecewisely
+```{r}
+chrisprior=function(x){
+  f=rep(0,length(x))
+for(i in 1:length(x)){
+  if (x[i]<=0.10){
+    f[i]=20*x[i]
+  }
+  if (x[i]>=0.1 & x[i]<=0.3){
+    f[i]=2
+  }
+  
+  if (x[i]>=0.3 & x[i]<=0.5){
+    f[i]=5-10*x[i]
+  }
+  
+}
+  return(f)
+}
+```
+
+```{r}
+#Find normalized constant using Numerical integral
+C=integrate(function(t){chrisprior(t)*t^y*(1-t)^(n-y)},0,1)
+
+chris=(chrisprior(x)*x^y*(1-x)^(n-y))/C$value 
+
+plot(x,anna,col="red",xlab="Posterior distribution",ylab = "")
+lines(x,bart,col="blue")
+lines(x,chris,col="orange")
+legend(0.6,3, legend=c("Anna", "Bart","Chris"),
+       col=c("red","blue","orange"), lty=1:2, cex=0.8)
+```
+
+```{r}
+#Posterior mean, variance
+annamean=(4.9+y)/(4.8+n+19.2)
+annamean
+annasd=sqrt((4.9+y)*(19.2+n-y)/((4.8+n+19.2)^2*(4.8+n+19.2+1) ))
+annasd
+```
+
+```{r}
+bartmean=(1+y)/(1+n+1)
+bartmean
+bartsd=sqrt((1+y)*(1+n-y)/((1+n+1)^2*(1+n+1+1)))
+bartsd
+```
+
+```{r}
+#Chris's posterior mean
+C1=integrate(function(t){t*chrisprior(t)*t^y*(1-t)^(n-y)},0,1)
+chrismean=C1$value/C$value
+chrismean
+```
+
+```{r}
+#Chris's posterior sd
+C2=integrate(function(t){t^2*chrisprior(t)*t^y*(1-t)^(n-y)},0,1)
+chrisvar=C2$value/C$value-chrismean^2
+chrissd=sqrt(chrisvar)
+chrissd
+```
+
+```{r}
+#95% Credible Interval
+alpha=.05
+z=qnorm(1-alpha/2,0,1)
+z
+```
+
+```{r}
+annCI=c(annamean-z*annasd,annamean+z*annasd)
+annCI
+```
+
+```{r}
+bartCI=c(bartmean-z*bartsd,bartmean+z*bartsd)
+bartCI
+```
+
+```{r}
+chrisCI=c(chrismean-z*chrissd,chrismean+z*chrissd)
+chrisCI
+```
