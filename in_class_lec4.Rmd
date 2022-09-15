@@ -1,0 +1,117 @@
+```{r}
+?dgamma
+```
+
+```{r}
+x=seq(0.01,50,0.001)
+y1=dgamma(x,shape=1,rate=1/2)
+y2=dgamma(x,shape=2,rate=1/2)
+y3=dgamma(x,shape=3,rate=1/2)
+y4=dgamma(x,shape=5,rate=1)
+y5=dgamma(x,shape=9,rate=2)
+y6=dgamma(x,shape=7.5,rate=1)
+y7=dgamma(x,shape=0.5,rate=1)
+```
+
+```{r}
+plot(x,y1,col=1)
+lines(x,y2,col=2)
+lines(x,y3,col=3)
+lines(x,y4,col=4)
+lines(x,y5,col=5)
+lines(x,y6,col=6)
+lines(x,y7,col=7)
+legend(20,0.3, legend=c("(1,1/2)","(2,1/2)" 
+                        ,"(3,1/2)","(5,1)","(9,2)"
+                        ,"(7.5,1)","(0.5,1)"),
+       col=c(1:7), lty=1:7, cex=0.8)
+```
+
+```{r}
+#Anna's prior
+x=seq(0.001,50,0.001)
+n=length(x)
+anna=rep(1,n)
+```
+
+```{r}
+gina=x^(-1/2)
+```
+
+```{r}
+#chase's : r=6.25, v=2.5
+chase=dgamma(x,shape=6.25,rate=2.5)
+```
+
+```{r}
+plot(x,anna,col=1,ylim=c(0,5))
+lines(x,gina,col=2)
+lines(x,chase,col=3)
+legend(20,1.2, legend=c("Anna","Gina","Chase"),
+       col=c(1:3), lty=1:3, cex=0.8)
+```
+
+```{r}
+#Posterior distribution
+
+x=seq(0.001,10,0.001)
+annapos=dgamma(x,shape=27,rate=8)
+annaposMean=27/8
+annaposMean
+annapossd=sqrt(27/8^2)
+annapossd
+```
+
+```{r}
+ginapos=dgamma(x,shape=26.5,rate=8)
+ginaposMean=26.5/8
+ginapossd=sqrt(26.5/8^2)
+ginaposMean
+ginapossd
+```
+
+```{r}
+chasepos=dgamma(x,shape=32.25,rate=10.5)
+chaseposMean=32.25/10.5
+chasepossd=sqrt(32.25/10.5^2)
+chaseposMean
+chasepossd
+```
+
+```{r}
+plot(x,annapos,col=1,ylim=c(0,0.8))
+lines(x,ginapos,col=2)
+lines(x,chasepos,col=3)
+legend(6,0.5, legend=c("Anna","Gina","Chase"),
+       col=c(1:3), lty=1:3, cex=0.8)
+```
+
+```{r}
+#Credible interval
+alpha=0.05
+annaCI=c(qgamma(alpha/2,shape=27,rate=8),qgamma(1-alpha/2,shape=27,rate=8))
+annaCI
+```
+
+```{r}
+ginaCI=c(qgamma(alpha/2,shape=26.5,rate=8),qgamma(1-alpha/2,shape=26.5,rate=8))
+ginaCI
+chaseCI=c(qgamma(alpha/2,shape=32.25,rate=10.5),qgamma(1-alpha/2,shape=32.25,rate=10.5))
+chaseCI
+```
+
+```{r}
+#hypothesis testing
+#H0 mu<3 vs H1: mu>=3
+annaP=pgamma(3,shape=27,rate=8)
+annaP
+
+ginaP=pgamma(3,shape=26.5,rate=8)
+ginaP
+
+chaseP=pgamma(3,shape=32.25,rate=10.5)
+chaseP
+```
+
+
+

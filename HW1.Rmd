@@ -39,3 +39,75 @@ plot(x, dbeta(x, 4, 4), col="blue", type="l", cex=.2)
 ```
 
 
+```{r}
+x=seq(0,1,0.001)
+n=100
+y=30
+gina=rep(0,length(x))
+```
+
+#Now we find gina's posterior distribution numerically
+#step 1 :define gina's prior piecewisely
+```{r}
+ginaprior=function(x){
+  f=rep(0,length(x))
+for(i in 1:length(x)){
+  if (x[i]<=0.20){
+    f[i]=x[i]
+  }
+  if (x[i]>=0.2 & x[i]<=0.3){
+    f[i]=.2
+  }
+  
+  if (x[i]>=0.3 & x[i]<=0.5){
+    f[i]=.5-x[i]
+  }
+  
+  if (x[i]>=0.5 & x[i]<=1){
+    f[i]=0
+  }
+  
+}
+  return(f)
+}
+```
+
+#Find normalized constant using Numerical integral
+```{r}
+C=integrate(function(t){ginaprior(t)*t^y*(1-t)^(n-y)},0,1)
+
+gina=(ginaprior(x)*x^y*(1-x)^(n-y))/C$value 
+
+```
+
+```{r}
+#gina's posterior mean
+C1=integrate(function(t){t*ginaprior(t)*t^y*(1-t)^(n-y)},0,1)
+
+ginamean=C1$value/C$value
+ginamean
+```
+
+```{r}
+#gina's posterior sd
+C2=integrate(function(t){t^2*ginaprior(t)*t^y*(1-t)^(n-y)},0,1)
+ginavar=C2$value/C$value-ginamean^2
+ginasd=sqrt(ginavar)
+ginasd
+```
+
+
+```{r}
+#90% Credible Interval
+alpha=.1
+z=qnorm(1-alpha/2,0,1)
+z
+```
+
+```{r}
+ginaCI=c(ginamean-z*ginasd,ginamean+z*ginasd)
+ginaCI
+```
+
+
+
