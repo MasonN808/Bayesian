@@ -47,7 +47,7 @@ chase=dgamma(x,shape=6.25,rate=2.5)
 plot(x,anna,col=1,ylim=c(0,5))
 lines(x,gina,col=2)
 lines(x,chase,col=3)
-legend(20,1.2, legend=c("Anna","Gina","Chase"),
+legend(20,3, legend=c("Anna","Gina","Chase"),
        col=c(1:3), lty=1:3, cex=0.8)
 ```
 
@@ -111,6 +111,7 @@ ginaP
 
 chaseP=pgamma(3,shape=32.25,rate=10.5)
 chaseP
+# Fail to reject the null hypothesis since >.05
 ```
 
 
