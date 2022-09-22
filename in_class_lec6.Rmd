@@ -1,0 +1,149 @@
+```{r}
+mu0=30
+tau0=10
+x=seq(mu0-3*tau0, mu0+3*tau0, 0.001)
+y=dnorm(x, mean=mu0, sd=tau0)
+plot(x,y)
+```
+
+```{r}
+#POSTERIOR DISTRIBUTION
+mun=36.868
+sigman=0.892
+x1=seq(mun-3*sigma, mun+3*sigma, 0.001)
+y1=dnorm(x1, mean=mun, sd=sigman)
+plot(x1,y1)
+lines(x, dnorm(x, mean=mu0, sd=tau0))
+```
+
+```{r}
+#PART B EXAMPLE 1
+# H0: mu<35 vs H1: mu>35
+# p.value=P(Posterior>35)
+p.value=1-pnorm(35, mean=mun, sd=sigman)
+p.value
+
+# We fail to reject the null hypothesis
+```
+
+```{r}
+Normalsummary <- function(data.vec,pop.var,prior.mean,prior.var,alpha) {
+  #data.vec : data set in vector form
+  #pop.var=sigma : which is known
+  #prior.mean = the prior mean : mu0
+  #prior.var= the prio var: tau0
+  #alpha: the level of significance
+  if(length(data.vec) <= 1)
+    stop("Warning: input data must be a vector")
+  mu.hat <- (prior.mean/prior.var +
+               length(data.vec)*mean(data.vec)/pop.var)/
+    (1/prior.var + length(data.vec)/pop.var)
+  sigma.hat <- 1/(1/prior.var + length(data.vec)/pop.var)
+  n.alpha=qnorm(1-alpha/2,0,1)
+  credible.int<-c(mu.hat-n.alpha*sqrt(sigma.hat),mu.hat+n.alpha*sqrt(sigma.hat))
+  list(mu.hat=mu.hat,sigma.hat=sigma.hat,
+       credible.interval=credible.int)
+}
+```
+
+
+#Example 2: 
+
+##===========================================================
+#Chuck's Posterior distribution
+
+```{r}
+x=seq(17,47,.001)
+chuck=rep(0,length(x))
+
+#Now we find Chuck's posterior distribution numerically
+#step 1 :define Chuck's prior piecewisely
+chuckprior=function(x){
+  f=rep(0,length(x))
+  for(i in 1:length(x)){
+    if (x[i]<=18){
+      f[i]=0
+    }
+    if (x[i]>=18 & x[i]<=24){
+      f[i]=(x[i]-18)/6
+    }
+    
+    if (x[i]>=24 & x[i]<=40){
+      f[i]=1
+    }
+    
+    if (x[i]>=40 & x[i]<=46){
+      f[i]=-(x[i]-46)/6
+    }
+    
+  }
+  return(f)
+}
+```
+
+```{r}
+n=12
+ybar=32
+```
+
+```{r}
+#Find normalized constant using Numerical integral (The possibly computationally intensive integral)
+C=integrate(function(t){chuckprior(t)*dnorm(t,mean=ybar,sd=ybar/sqrt(n))},17,47)
+```
+
+```{r}
+chuck=(chuckprior(x)*dnorm(x,mean=ybar,sd=ybar/sqrt(n)))/C$value 
+plot(x,chuckprior(x),col="red",xlab="prior distribution",ylab = "")
+plot(x,chuck,col="red",xlab="Posterior distribution",ylab = "")
+```
+
+```{r}
+#Chuck's posterior mean
+C1=integrate(function(t){t*chuckprior(t)*dnorm(t,mean=ybar,sd=ybar/sqrt(n))},17,47)
+chuckmean=C1$value/C$value
+chuckmean
+```
+
+```{r}
+#Chuck's posterior sd
+C2=integrate(function(t){t^2*chuckprior(t)*dnorm(t,mean=ybar,sd=ybar/sqrt(n))},17,47)
+chuckvar=C2$value/C$value-chuckmean^2
+chucksd=sqrt(chuckvar)
+chucksd
+```
+
+```{r}
+#95 % Credible interval
+c(chuckmean-1.96*chucksd,chuckmean+1.96*chucksd)
+```
+
+
+#Example 4 (Continuation of EXAMPLE 3)
+# p r i o r
+```{r}
+mu0=1.9 ; k0=1
+s20 =0.10 ; v0=1
+```
+
+# data
+```{r}
+y=c(1.64 , 1.70 , 1.72 , 1.74 , 1.82 , 1.82 , 1.82 , 1.90 , 2.08 )
+n=length(y) ; ybar=mean (y) ; s2=var(y)
+```
+
+# p o s t e r i o r i n f e r e n c e
+```{r}
+kn=k0+n ; vn=v0+n
+mun=(k0*mu0 + n*ybar )/kn
+```
+
+```{r}
+alphaprime=(v0+n)/2
+betaprime=((v0*s20 +(n-1)*s2 +k0*n*(ybar-mu0 )^2 /(kn))/(vn))*(v0+n)/2
+meansigma=betaprime/(alphaprime-1)
+mun
+meansigma
+```
+
+
+
