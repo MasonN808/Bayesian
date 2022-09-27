@@ -26,6 +26,30 @@ p.value
 # We fail to reject the null hypothesis
 ```
 
+
+# Continuation
+```{r}
+mun=1.805
+siman=sqrt(.002)
+alpha=.1
+t=qnorm(1-alpha/2, 0, 1)
+# 90% CI
+c(mun-t*sigman, mun+t*sigman)
+```
+
+```{r}
+library(MCMCpack)
+
+x=seq(0.001, 5, 0.001)
+y=dinvgamma(x, 1, 2)
+plot(x, y)
+
+set.seed(123)
+m=1000
+z=rinvgamma(m, 10, 2)
+hist(z)
+```
+
 ```{r}
 Normalsummary <- function(data.vec,pop.var,prior.mean,prior.var,alpha) {
   #data.vec : data set in vector form
