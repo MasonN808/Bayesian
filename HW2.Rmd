@@ -1,0 +1,67 @@
+##===========================================================
+#Gina's Posterior distribution
+
+```{r}
+x=seq(0,9,.001)
+gina=rep(0,length(x))
+
+#Now we find gina's posterior distribution numerically
+#step 1 :define gina's prior piecewisely
+ginaprior=function(x){
+  f=rep(0,length(x))
+  for(i in 1:length(x)){
+    if (x[i]<=3){
+      f[i]=x[i]
+    }
+    if (x[i]>=3 & x[i]<=5){
+      f[i]=3
+    }
+    
+    if (x[i]>=5 & x[i]<=8){
+      f[i]=8-x[i]
+    }
+    
+    if (x[i]>=8){
+      f[i]=0
+    }
+    
+  }
+  return(f)
+}
+```
+
+```{r}
+n=16
+ybar=4.8025
+```
+
+```{r}
+#Find normalized constant using Numerical integral (The possibly computationally intensive integral)
+C=integrate(function(t){ginaprior(t)*dnorm(t,mean=ybar,sd=ybar/sqrt(n))},0,9)
+```
+
+```{r}
+gina=(ginaprior(x)*dnorm(x,mean=ybar,sd=ybar/sqrt(n)))/C$value 
+plot(x,ginaprior(x),col="red",xlab="prior distribution",ylab = "")
+plot(x,gina,col="red",xlab="Posterior distribution",ylab = "")
+```
+
+```{r}
+#gina's posterior mean
+C1=integrate(function(t){t*ginaprior(t)*dnorm(t,mean=ybar,sd=ybar/sqrt(n))},0,9)
+ginamean=C1$value/C$value
+ginamean
+```
+
+```{r}
+#gina's posterior sd
+C2=integrate(function(t){t^2*ginaprior(t)*dnorm(t,mean=ybar,sd=ybar/sqrt(n))},0,9)
+ginavar=C2$value/C$value-ginamean^2
+ginasd=sqrt(ginavar)
+ginasd
+```
+
+```{r}
+#95 % Credible interval
+c(ginamean-1.96*ginasd,ginamean+1.96*ginasd)
+```
