@@ -1,3 +1,14 @@
+# 1)
+##===========================================================
+
+```{r}
+qgamma(.5, 41, 5)
+```
+```{r}
+qgamma(.5, 40.5, 5)
+```
+
+# 6)
 ##===========================================================
 #Gina's Posterior distribution
 
@@ -62,6 +73,6 @@ ginasd
 ```
 
 ```{r}
-#95 % Credible interval
-c(ginamean-1.96*ginasd,ginamean+1.96*ginasd)
+#90% Credible interval
+c(ginamean-1.645*ginasd,ginamean+1.645*ginasd)
 ```

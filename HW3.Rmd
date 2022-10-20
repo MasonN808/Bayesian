@@ -1,0 +1,92 @@
+```{r}
+# 1)
+
+mu1 = rgamma(100000, 219, 112)
+mu2 = rgamma(100000, 68, 45)
+mean(mu1>mu2)
+```
+
+```{r}
+#Posterior distribution
+
+n0<-seq(1,50)
+plot( "h0","Expectation", xlim=c(0,50), ylim=c(8,12))
+y=c()
+for (i in n0){
+  # Calculate the expectation
+  new=(113 + 12*i)/(13 + i)
+  y=append(y,new)
+}
+points(n0, y)
+
+```
+```{r}
+thetaA = rgamma(100000, 120 + 117, 10 + 10)
+thetaB = rgamma(100000, 12 + 113, 1 + 13)
+mean(thetaB<thetaA)
+
+```
+```{r}
+#Posterior distribution
+
+n0<-seq(1,20)
+plot( "h0","P", xlim=c(0,20), ylim=c(0,1))
+y=c()
+for (i in n0){
+  thetaA = rgamma(100000, 120 + 117, 10 + 10)
+  thetaB = rgamma(100000, 12*i + 113, 1*i + 13)
+  new=mean(thetaB<thetaA)
+  y=append(y,new)
+}
+points(n0, y)
+
+```
+```{r}
+# priors
+mu0<-75  ;
+s20<-100 ;
+
+
+# Data
+ybar_A=75.2; 
+s2_A=(7.3)^2;
+
+ybar_B=77.5; 
+s2_B=(8.1)^2;
+
+n=16
+k0v = c(1, 2, 4, 8, 16, 32, 64, 128)
+v0v = k0v
+
+probs=rep(NA, length(k0v))
+
+## Gibbs sampling algorithm
+for(iteration in 1:length(k0v)) {
+  
+  k0 = k0v[iteration]
+  v0 = v0v[iteration]
+  
+  # From inference for mu from Normal
+  mun_A = (k0*mu0 + n*ybar_A)/(k0 + n)
+  # From inference for s2 from inverseGamma
+  s2n_A_tilde = (v0*s20 + (n-1)*s2_A + k0*n*(ybar_A-mu0)^2/(k0 + n))/((v0 + n))
+  
+  # From inference for mu from Normal
+  mun_B = (k0*mu0 + n*ybar_B)/(k0 + n)
+  # From inference for s2 from inverseGamma
+  s2n_B_tilde = (v0*s20 + (n-1)*s2_B + k0*n*(ybar_B-mu0)^2/(k0 + n))/((v0 + n))
+  
+  # Take the inverse to find var
+  s2n_A  = 1/rgamma(10000,  shape=(v0 + n)/2 , rate=s2n_A_tilde*(v0 + n)/2)
+  thetaA = rnorm(10000, mean=mun_A, sd=sqrt(s2n_A/(k0 + n)))
+  
+  # Take the inverse to find var
+  s2n_B  = 1/rgamma(10000,  shape=(v0 + n)/2 , rate=s2n_B_tilde*(v0 + n)/2)
+  thetaB = rnorm(10000, mean=mun_B, sd=sqrt(s2n_B/(k0 + n)))
+  
+  probs[iteration] = mean(thetaA<thetaB)
+}
+
+plot(k0v[1:8], probs[1:8], pch=19, ylim = c(.5,.9),ylab="Probability")
+
+```

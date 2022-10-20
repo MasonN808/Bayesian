@@ -1,0 +1,286 @@
+# DATE: 9/29
+
+```{r}
+r=68
+v=45
+
+# E(X)=r/v=68/45 (EXACT)
+68/45
+
+# APPROXIMATE
+n=100000
+x=rgamma(n,r,v)
+mean(x)
+```
+
+
+```{r}
+# E(X)=(E(X))^2 + var(X) (EXACT)
+(68/45)^2 + (67/45^2)
+
+# APPROXIMATE
+mean(x^2)
+```
+
+```{r}
+# PLOTTING
+set.seed(1)
+a=68; # the r value
+b=45; # the v value
+theta.support=seq(0,3,length=100) # the domain for x
+theta.sim10=rgamma(10,a,b)
+theta.sim100=rgamma(100,a,b)
+theta.sim1000=rgamma(1000,a,b)
+xlim=c(.75,2.25)
+ylim=c(0,2.5)
+lty=1
+hist(theta.sim10,prob=T,xlim=xlim,ylim=ylim,xlab="",ylab="")
+lines(theta.support,dgamma(theta.support,a,b), col="gray", lwd=2, lty=lty)
+text(2.1,2.25,expression(paste(italic(S), "=10",sep="")))
+```
+
+```{r}
+hist(theta.sim100,prob=T,xlim=xlim,ylim=ylim,xlab="",ylab="")
+lines(theta.support,dgamma(theta.support,a,b), col="gray", lwd=2, lty=lty)
+text(2.1,2.25,expression(paste(italic(S), "=100",sep="")))
+
+hist(theta.sim1000,prob=T,xlim=xlim,ylim=ylim,xlab="",ylab="")
+lines(theta.support,dgamma(theta.support,a,b), col="gray", lwd=2, lty=lty)
+text(2.1,2.25,expression(paste(italic(S), "=1000",sep="")))
+
+plot(density(theta.sim10),xlim=xlim,ylim=ylim, xlab=expression(theta),main="",ylab="")
+```
+
+```{r}
+##############Example 1
+r=68; v=45;
+#mean =r/v=68/45
+68/45
+#var=r/v^2=68/45^2
+#E(X^2)=E(X)^2+Var(X) =(68/45)^2+68/45^2
+(68/45)^2+68/45^2
+
+n=100000
+x=rgamma(n,r,v)
+mean(x)
+
+mean(x^2)
+
+
+#Plot the pictures
+par(mar=c(3,3,.25,1),mgp=c(1.75,.75,0))
+par(mfrow=c(2,3))
+set.seed(1)
+a<-68 ; b<-45
+set.seed(1)
+theta.support<-seq(0,3,length=100)
+theta.sim10<-rgamma(10,a,b)
+theta.sim100<-rgamma(100,a,b)
+theta.sim1000<-rgamma(1000,a,b)
+
+xlim<-c(.75,2.25)
+ylim=c(0,2.5)
+lty=1
+
+hist( theta.sim10, prob=T,xlim=xlim,ylim=ylim,xlab="",main="",ylab="")
+lines(theta.support,dgamma(theta.support,a,b),col="gray",lwd=2,lty=lty)
+text(2.1,2.25,expression(paste(italic(S),"=10",sep="")))
+
+hist( theta.sim100, prob=T,xlim=xlim,ylim=ylim,xlab="",main="" ,ylab="")
+lines(theta.support,dgamma(theta.support,a,b),col="gray",lwd=2,lty=lty)
+text(2.1,2.25,expression(paste(italic(S),"=100",sep="")))
+
+
+
+hist( theta.sim1000, prob=T,xlim=xlim,ylim=ylim,xlab="",main="" ,ylab="")
+lines(theta.support,dgamma(theta.support,a,b),col="gray",lwd=2,lty=lty)
+text(2.1,2.25,expression(paste(italic(S),"=1000",sep="")))
+
+
+plot(density(theta.sim10),xlim=xlim,ylim=ylim,xlab=expression(theta),main="",ylab="")
+lines(theta.support,dgamma(theta.support,a,b),col="gray",lwd=2,lty=lty)
+
+plot(density(theta.sim100),xlim=xlim,ylim=ylim,xlab=expression(theta),main="",ylab="")
+lines(theta.support,dgamma(theta.support,a,b),col="gray",lwd=2,lty=lty)
+
+plot(density(theta.sim1000),xlim=xlim,ylim=ylim,xlab=expression(theta),main="",ylab="")
+lines(theta.support,dgamma(theta.support,a,b),col="gray",lwd=2,lty=lty)
+
+```
+```{r}
+#############Example 2
+
+load(url("https://foxweb.marist.edu/users/duy.nguyen2/gss.RData"))
+head(gss)
+```
+
+```{r}
+y2<-gss$CHILDS[gss$FEMALE==1 &  gss$YEAR>=1990  & gss$AGE==40 & gss$DEG>=3 ]
+y1<-gss$CHILDS[gss$FEMALE==1 &  gss$YEAR>=1990  & gss$AGE==40 & gss$DEG<3 ]
+
+y2<-y2[!is.na(y2)]
+y1<-y1[!is.na(y1)]
+table(y1)
+table(y2)
+```
+
+```{r}
+
+#pdf("fig.pdf",family="Times",height=3.5,width=7)
+par(mar=c(3,3,1,1),mgp=c(1.75,.75,0))
+par(mfrow=c(1,2))
+
+set.seed(1) 
+n1<-length(y1) ; n2<-length(y2)
+s1<-sum(y1)
+s2<-sum(y2)
+
+par(mfrow=c(1,2),mar=c(3,3,1,1),mgp=c(1.75,.75,0))
+plot(table(y1), type="h",xlab=expression(italic(y)),ylab=expression(italic(n[1](y))),col=gray(.5) ,lwd=3)
+mtext("Less than bachelor's",side=3)
+plot(table(y2), type="h",xlab=expression(italic(y)),ylab=expression(italic(n[2](y))),col=gray(0),lwd=3)
+mtext("Bachelor's or higher",side=3,lwd=3)
+#dev.off()
+```
+
+```{r}
+#####posterior distributions
+
+ a=2 ; b=1 # p r i o r parameter s
+ n1=111 ; sy1=217 # data in group 1
+ n2=44 ; sy2=66 # data in group 2
+
+ #Group 1:
+(a+sy1) / (b+n1) # p o s t e r i o r mean for group 1
+(a+sy1-1)/(b+n1) # p o s t e r i o r mode for group 1
+ qgamma( c ( .025 , .975) , a+sy1 , b+n1 ) # p o s t e r i o r 95% CI
+```
+
+```{r}
+ #Group 2:
+( a+sy2 ) / ( b+n2 ) #mean
+( a+sy2 -1)/(b+n2 ) #mode
+qgamma( c ( .025 , .975 ) , a+sy2 , b+n2 ) # p o s t e r i o r 95% CI
+
+```
+
+```{r}
+#Monte Carlo simulation
+
+#a P(mu2<1.75)
+
+  #exact 
+   pgamma(1.75,a+sy2 , b+n2)
+  #Monte Calor
+  a=2 ; b=1
+  sy2=66 ; n2=44
+  #approx the prob using 10 sample points
+  theta2.mc10=rgamma (10 , a+sy2 , b+n2)
+  mean(theta2.mc10<1.75)
+  
+  #approx the prob using 100 sample points
+  theta2.mc100=rgamma(100 , a+sy2 , b+n2)
+  mean(theta2.mc100<1.75)
+  
+  #approx the prob using 1000 sample points
+  theta2.mc1000=rgamma(1000 , a+sy2 , b+n2)
+  mean(theta2.mc1000<1.75)
+```
+
+```{r}
+  #plot
+  x=c(10,100,1000)
+  yexact=rep(pgamma(1.75,a+sy2 , b+n2),3)
+  
+  plot(x,yexact,col="red",type="l",ylab="",xlab="Number of points")
+  lines(x,c(mean(theta2.mc10<1.75),mean(theta2.mc100<1.75),mean(theta2.mc1000<1.75)),lty=3)
+```
+
+```{r}
+#c) P(mu1>mu2)
+ a=2 ; b=1
+ sy1=217 ; n1=111
+ sy2=66 ; n2=44
+ #approx the prob using 10000 sample points
+ theta1.mc=rgamma(10000 , a+sy1 , b+n1 )
+ theta2.mc=rgamma(10000 , a+sy2 , b+n2 )
+ mean(theta1.mc>theta2.mc)
+
+```
+
+
+```{r}
+#class exercise) P(mu1<1) find exact and MC
+ a=2 ; b=1
+ sy1=217 ; n1=111
+ sy2=66 ; n2=44
+ #approx the prob using 10000 sample points
+ theta1.mc=rgamma(10000 , a+sy1 , b+n1 )
+ mean(theta1.mc<1)
+ 
+ #exact 
+ pgamma(1,a+sy1 , b+n1)
+```
+
+```{r}
+#class exercise) P(mu2>1) find exact and MC
+ a=2 ; b=1
+ sy1=217 ; n1=111
+ sy2=66 ; n2=44
+ #approx the prob using 10000 sample points
+ theta2.mc=rgamma(10000 , a+sy2 , b+n2 )
+ mean(theta2.mc<1)
+ 
+ #exact 
+ 1-pgamma(1,a+sy2 , b+n2)
+
+```
+
+```{r}
+#class exercise) P(mu1/mu2>1) find exact and MC
+ a=2 ; b=1
+ sy1=217 ; n1=111
+ sy2=66 ; n2=44
+ #approx the prob using 10000 sample points
+ theta1.mc=rgamma(10000 , a+sy1 , b+n1 )
+ theta2.mc=rgamma(10000 , a+sy2 , b+n2 )
+ mean((theta1.mc/theta2.mc) > 1)
+ 
+ # exact 
+ # Can't find exact value
+
+```
+
+```{r}
+ #Example 3: 
+ 
+ 
+ a=1; b=1
+ #prior estimate of gamma
+ pi.prior.mc=rbeta (10000 , a , b)
+ gamma.prior.mc=log(pi.prior.mc/(1-pi.prior.mc) )
+ mean(gamma.prior.mc)
+ 
+ #post estimate of gamma
+ n0=860-441 ; n1=441
+ pi.post.mc=rbeta (10000 , a+n1 , b+n0 )
+ gamma.post.mc=log( pi.post.mc/(1-pi.post.mc) )
+ mean(gamma.post.mc)
+ 
+ 
+ #pdf("fig4_3.pdf",family="Times",height=3.5,width=7)
+ par(mar=c(3,3,1,1),mgp=c(1.75,.75,0))
+ par(mfrow=c(2,3))
+ par(cex=.8)
+ 
+ par(mfrow=c(1,2),mar=c(3,3,1,1), mgp=c(1.75,.75,.0))
+ plot(density(gamma.prior.mc,adj=2),xlim=c(-5,5),main="", 
+      xlab=expression(gamma),
+      ylab=expression(italic(p(gamma))),col="gray")
+ plot(density(gamma.post.mc,adj=2),xlim=c(-5,5),main="",xlab=expression(gamma),
+      ylab=expression(paste(italic("p("),gamma,"|",y[1],"...",y[n],")",
+                            sep="")) )
+ lines(density(gamma.prior.mc,adj=2),col="gray")
+ ```
+ 
+ 
