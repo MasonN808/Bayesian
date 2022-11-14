@@ -29,8 +29,8 @@ mean(thetaB<thetaA)
 ```{r}
 #Posterior distribution
 
-n0<-seq(1,20)
-plot( "h0","P", xlim=c(0,20), ylim=c(0,1))
+n0<-seq(1,50)
+plot( "h0","P", xlim=c(0,50), ylim=c(0,1))
 y=c()
 for (i in n0){
   thetaA = rgamma(100000, 120 + 117, 10 + 10)

@@ -1,0 +1,230 @@
+---
+title: "Bayesian hierarchical modeling"
+output:
+  pdf_document: default
+  html_document:
+    number_sections: yes
+fontsize: 11pt
+date: "2022-10-27"
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(ggplot2)
+require(gridExtra)
+require(ProbBayes)
+require(tidyverse)
+require(runjags)
+require(coda)
+crcblue <- "#2905a1"
+knitr::opts_chunk$set(echo = TRUE)
+def.chunk.hook  <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- def.chunk.hook(x, options)
+  ifelse(options$size != "normalsize", paste0("\\", options$size,"\n\n", x, "\n\n \\normalsize"), x)
+})
+```
+
+# Installing the necessary packages
+
+```{r, eval = FALSE}
+# install.packages("devtools")
+require(devtools)
+# devtools::install_github("bayesball/ProbBayes")
+
+require(ggplot2)
+require(gridExtra)
+require(ProbBayes)
+require(tidyverse)
+crcblue <- "#2905a1"
+```
+
+
+
+# Example: Korean Drama Ratings
+
+## Ratings by Schedule
+
+```{r message = FALSE}
+dramadata = read.csv("https://foxweb.marist.edu/users/duy.nguyen2/KDramaData.csv", header=T)
+
+KBSdrama = dramadata[dramadata$Producer==2,]
+KBSdrama$Schedule = as.factor(KBSdrama$Schedule)
+```
+
+```{r echo = FALSE}
+ggplot(KBSdrama, aes(Rating, color = Schedule)) +
+  geom_density() + labs(title = "Density plot of ratings") + 
+  xlim(0, 0.3) + theme_grey(base_size = 10, base_family = "") 
+```
+
+
+```{r}
+table(KBSdrama$Schedule)
+tapply(KBSdrama$Rating, KBSdrama$Schedule, summary)
+tapply(KBSdrama$Rating, KBSdrama$Schedule, sd)
+```
+
+# MCMC simulation by JAGS
+
+## JAGS Script for the Hierarchical Model
+
+```{r message = FALSE}
+modelString <-"
+model {
+## likelihood
+for (i in 1:N){
+  y[i] ~ dnorm(mu_j[schedule[i]], invsigma2)
+}
+
+## priors
+for (j in 1:J){
+mu_j[j] ~ dnorm(mu, invtau2)
+}
+invsigma2 ~ dgamma(a_g, b_g)
+sigma <- sqrt(pow(invsigma2, -1))
+
+## hyperpriors
+mu ~ dnorm(mu0, 1/g0^2)
+invtau2 ~ dgamma(a_t, b_t)
+tau <- sqrt(pow(invtau2, -1))
+}
+"
+```
+
+
+- Pass the data and hyperparameter values to JAGS:
+
+```{r message = FALSE}
+y = KBSdrama$Rating   
+print(y)
+schedule = KBSdrama$Schedule  
+print(schedule)
+N = length(y)  
+J = length(unique(schedule)) 
+
+# for the replication of ~set.seed(123)
+initsfunction <- function(chain){
+  .RNG.seed <- c(1,2)[chain]
+  .RNG.name <- c("base::Super-Duper",
+                 "base::Wichmann-Hill")[chain]
+  return(list(.RNG.seed=.RNG.seed,
+              .RNG.name=.RNG.name))
+}
+
+the_data <- list("y" = y, "schedule" = schedule, "N" = N, "J" = J, 
+                 "mu0" = 0.1, "g0" = 0.5, 
+                 "a_t" = 1, "b_t" = 1,
+                 "a_g" = 1, "b_g" = 1)
+```
+
+- Run the JAGS code for this model:
+
+```{r message = FALSE, warning = FALSE}
+posterior <- run.jags(modelString,
+                      n.chains = 1,
+                      data = the_data,
+                      monitor = c("mu", "tau", "mu_j", "sigma"),
+                      adapt = 1000,
+                      burnin = 5000,
+                      sample = 5000,
+                      thin = 1, 
+                      inits = initsfunction)
+```
+
+## JAGS Output of the Hierarchical Model
+
+- Obtain posterior summaries of all parameters:
+
+\vspace{3mm}
+
+```{r message = FALSE, warning = FALSE}
+summary(posterior)
+# Since the means vary largely depending on the scheduling for the subgroups, the scheduling matters
+# Note that the movie rating is below 0 for the lower95 
+# Approach 1 --> we can truncate/throw away anything on the domain of the pdf that is < 0
+# Approach 2 --> we can use the log normal distribution to avoid a domain < 0 on the pdf
+```
+
+```{r message = FALSE}
+plot(posterior, vars = "mu_j[1]")
+# => mu_j[1] converges in top left plot
+# NOTE: if the graph in the top left plot does not seem to converge, then run more iterations until convergence
+
+# In plot bottom right, if the correlation is unstable and not 0 as seen below, then we need more iterations
+```
+```{r message = FALSE}
+plot(posterior, vars = "mu_j[2]")
+```
+
+```{r message = FALSE}
+plot(posterior, vars = "tau")
+```
+
+## Shrinkage/Pooling Effects
+
+```{r message = FALSE, warning = FALSE}
+Ind_Stats = as.data.frame(matrix(NA, J, 2))
+names(Ind_Stats) = c("mean", "sd")
+for (j in 1:J){
+  Ind_Stats[j, ] = c(mean(KBSdrama$Rating[KBSdrama$Schedule == j]), 
+                     sd(KBSdrama$Rating[KBSdrama$Schedule == j]))
+}
+
+Post_Means <- summary(posterior)[, 4]
+
+Means1 <- data.frame(Type = "Sample", Mean = Ind_Stats$mean)
+Means2 <- data.frame(Type = "Hierarchical", Mean =
+                       Post_Means[3:(4 + J - 2)])
+
+Means1$Title <- c("Schedule 1", "Schedule 2", "Schedule 3",
+                  "Schedule 4")
+Means2$Title <- c("Schedule 1", "Schedule 2", "Schedule 3",
+                  "Schedule 4")
+```
+
+
+```{r message = FALSE}
+ggplot(rbind(Means1, Means2), aes(Type, Mean, group=Title)) +
+  geom_line(color = crcblue) + geom_point() +
+  annotate(geom = "text", x = 0.75,
+           y = Means1$Mean + c(0.01, 0.01, 0.01, -0.01), 
+           size = 3, label = Means1$Title) + increasefont(Size = 10)
+```
+
+
+## Sources of Variability
+## We need the \texttt{coda} R package
+
+```{r eval = FALSE}
+install.packages("coda")
+```
+
+```{r message = FALSE, warning = FALSE}
+require(coda)
+tau_draws <- as.mcmc(posterior, vars = "tau")
+sigma_draws <- as.mcmc(posterior, vars = "sigma")
+R <- tau_draws^2/(tau_draws^2 + sigma_draws^2)
+
+df <- as.data.frame(R)
+
+quantile(R, c(0.025, 0.975))
+```
+
+
+```{r message = FALSE}
+ggplot(df, aes(x=R)) + geom_density() +
+  labs(title="Density of R") +
+  theme(plot.title = element_text(size=15)) +
+  theme(axis.title = element_text(size=15))
+```
+
+
+# In cl
+
+
+
+
+
+# Recap

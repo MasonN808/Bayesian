@@ -1,0 +1,365 @@
+---
+title: "Hw4"
+output:
+  pdf_document: default
+  html_document: 
+    toc: true
+    toc_float: true
+date: "2022-10-24"
+---
+```{r}
+# Generate a multinomially distributed random vector
+N <- 500000
+observations <- c()
+for (i in 1:N) {
+  latent_class <- rmultinom(1, size=1, prob=c(.45, .1, .45))
+  if (latent_class[1] == 1) {
+    observation <- rnorm(1, -3, (1/3))
+  }
+  if (latent_class[2] == 1) {
+    observation <- rnorm(1, 0, (1/3))
+  }
+  if (latent_class[3] == 1) {
+    observation <- rnorm(1, 3, (1/3))
+  }
+  # Append the observation to the vector of observations for plotting
+  observations <- append(observations, observation)
+}
+xlim=c(-5,5)
+ylim=c(0,100000)
+
+hist(observations,xlim=xlim,ylim=ylim,xlab="theta",ylab="number of observations", breaks=seq(-5,5,.1))
+```
+```{r}
+# 1b)
+#### Gibbs sampler
+
+means <- c(-3, 0, 3)
+var <- (1/3)^2
+
+S <- 500000
+
+# Do S-1 to get rid of end NA value
+# Initialize first theta
+latent_class <- rmultinom(1, size=1, prob=c(.45, .1, .45))
+latent_class <- match(1, latent_class)
+theta_init <- sample(c(-3,0,3), prob = c(.45,.1,.45 ))[1]
+deltas <- c(latent_class, rep(NA, S-1))
+thetas <- c(theta_init, rep(NA, S-1))
+
+## Gibbs sampling algorithm
+for(i in 2:S) {
+  # thetas[i] <- sum(deltas[i-1]*rnorm(1,deltas[1], sqrt(var)), deltas[i-1]*rnorm(1,deltas[2], sqrt(var)), deltas[i-1]*rnorm(1,deltas[3], sqrt(var)))
+
+  # Find delta
+  probabilities <- c(.45*dnorm(thetas[i-1], -3, 1/3), .1*dnorm(thetas[i-1], 0, 1/3), .45*dnorm(thetas[i-1], 3, 1/3))
+  # Choose the most probable delta
+  if ((probabilities[1]>probabilities[2]) & (probabilities[1]>probabilities[3])) {
+    deltas[i] <- 1
+  }
+  else if ((probabilities[2]>=probabilities[1]) & (probabilities[2]>=probabilities[3])) {
+    deltas[i] <- 2
+  }
+  else {
+    deltas[i] <- 3
+  }
+
+  # Find theta
+  thetas[i] <- rnorm(1,means[deltas[i-1]], 1/3)
+}
+xlim=c(-5,5)
+ylim=c(0,100000)
+# Remove first NA value
+deltas <- deltas[2:length(deltas)]
+
+hist(thetas,xlim=xlim,ylim=ylim,xlab="theta",ylab="number of observations", breaks=seq(-5,5,.1))
+
+```
+
+```{r}
+# 2a)
+y_A = read.csv("https://foxweb.marist.edu/users/duy.nguyen2/menchild30bach.dat", header=F, sep=" ")
+y_B = read.csv("https://foxweb.marist.edu/users/duy.nguyen2/menchild30nobach.dat", header=F, sep=" ")
+y_A = na.omit(data.frame(numChildren=unlist(y_A, use.names=F)))
+y_B = na.omit(data.frame(numChildren=unlist(y_B, use.names=F)))
+
+Gammas <- c(8,16,32,64,128)
+for (gamma in Gammas) {
+  N_A = length(a)
+  N_B = length(b)
+  sum_A = sum(a)
+  sum_B = sum(b)
+  A_samp_mean = sum_A/N_A
+  B_samp_mean = sum_B/N_B
+  
+  a_theta <- 2
+  b_theta <- 1
+  a_gamma <- b_gamma <- gamma
+  
+  theta_prior = A_samp_mean
+  gamma_prior = B_samp_mean/A_samp_mean
+  
+  S <- 5000
+  
+  # Do S-1 to get rid of end NA value
+  thetas <- c(theta_prior, rep(NA, S-1))
+  gammas <- c(gamma_prior, rep(NA, S-1))
+  theta_B <- rep(NA, S)
+  ## Gibbs sampling algorithm
+  for(i in 2:S) {
+    
+    thetas[i] <- rgamma(1, sum_A + sum_B + a_theta, N_A + N_B * gammas[i-1] + b_theta)
+    
+    gammas[i] <- rgamma(1, sum_B + a_gamma, N_B * thetas[i-1] + b_gamma)
+    
+    theta_B[i] <- thetas[i]*gammas[i]
+  }
+  # Get rid of the first NA value
+  theta_B <- theta_B[2:length(theta_B)]
+  print(mean(theta_B) - mean(thetas))
+}
+
+#d) As gamma increases exponentially the expectation of the difference of thetaB and thetaA given the
+# data decreases which implies that this decreases gamma which is represented as the relative rate.
+```
+
+
+```{r}
+# 3)
+# For plotting
+require("ash")
+# a)
+crab_b <- read.csv("https://foxweb.marist.edu/users/duy.nguyen2/bluecrab.dat", header = FALSE, sep = " ")
+crab_o <- read.csv("https://foxweb.marist.edu/users/duy.nguyen2/orangecrab.dat", header = FALSE, sep = " ")
+
+saved_THETAS <- c()
+saved_SIGMAS <- c()
+# Use list since c() destroys df object
+for (crab in list(crab_b, crab_o)) {
+  mu0 <- y_bar <- c(mean(crab[,1]), mean(crab[,2]))
+  
+  L0 <- S0 <- cov(crab)
+  nu0 <- 4
+  
+  n <- dim(crab)[1]
+  Sigma <- S0
+  THETA <- SIGMA <- YS <- NULL
+  
+  for(s in 1:10000) {
+    ###update theta
+    Ln<-solve( solve(L0) + n*solve(Sigma) ) # STEP 1
+    mun<-Ln%*%( solve(L0)%*%mu0 + n*solve(Sigma)%*%y_bar ) # STEP 1
+    theta<-rmvnorm(1,mun,Ln)  # STEP 2
+    ###
+  
+    ###update Sigma
+    Sn<- S0 + ( t(crab)-c(theta) )%*%t( t(crab)-c(theta) )  # STEP 3
+    Sigma<-solve( rwish(1, nu0+n, solve(Sn)) ) # STEP 4
+    ###
+  
+    ###
+    YS<-rbind(YS,rmvnorm(1,theta,Sigma))
+    ###
+  
+    ### save results
+    THETA<-rbind(THETA,theta)
+    SIGMA<-rbind(SIGMA,c(Sigma))
+
+  } 
+  # Save the thetas for comparison
+  saved_THETAS <- append(saved_THETAS, list(THETA))
+  saved_SIGMAS <- append(saved_SIGMAS, list(SIGMA))
+}
+# b)
+
+# Plotting
+plot.hdr2d(saved_THETAS[[1]],xlab=expression(theta[1]),ylab=expression(theta[2]), main="blue crabs")
+
+plot.hdr2d(saved_THETAS[[2]],xlab=expression(theta[1]),ylab=expression(theta[2]), main="orange crabs")
+
+# orange mean depth > blue mean depth
+mean(saved_THETAS[[2]][,1] > saved_THETAS[[1]][,1])
+# orange mean width > blue mean width
+mean(saved_THETAS[[2]][,2] > saved_THETAS[[1]][,2])
+
+#c)
+blue_cov <- saved_SIGMAS[[1]][,2]
+blue_var_h <- saved_SIGMAS[[1]][,1]
+blue_var_w <- saved_SIGMAS[[1]][,4]
+blue_cor <- blue_cov/sqrt(blue_var_h*blue_var_w)
+# Blue crab correlation
+blue_cor <- data.frame(blue_cor)
+
+
+orange_cov <- saved_SIGMAS[[2]][,2]
+orange_var_h <- saved_SIGMAS[[2]][,1]
+orange_var_w <- saved_SIGMAS[[2]][,4]
+orange_cor <- orange_cov/sqrt(orange_var_h*orange_var_w)
+# Orange crab correlation
+orange_cor <- data.frame(orange_cor)
+
+ggplot(data=blue_cor, aes(x = blue_cor)) + geom_density()
+ggplot(data=orange_cor, aes(x = orange_cor)) + geom_density()
+
+mean(blue_cor[,1] < orange_cor[,1])
+
+```
+
+```{r}
+# 4b)
+theta_prior <- c(30,30)
+covariance_matrix_prior <- matrix(c(25, 18.75, 18.75, 25), nrow = 2, ncol = 2, byrow=T)
+dataSets <- c()
+for (i in 1:3) {
+  data <- rmvnorm(100, theta_prior, covariance_matrix_prior)
+  dataSets <- append(dataSets, data)
+  plot(data[,1], data[,2], main = "prior predictive dataset", xlab=expression(theta[h]), ylab=expression(theta[w]))
+}
+
+# SOLUTION:
+# I decided on the following priors: mean marriage age for men to be 30 years, mean marriage age for women to be 30
+# years, the correlation between men and womens age to be .75, and each of their standard deviations to be 5 years.
+
+```
+
+```{r}
+# 4c)
+# Get the data
+Y <- read.csv("https://foxweb.marist.edu/users/duy.nguyen2/agehw.dat", header = T, sep = " ")
+
+mu0 <- theta_prior <- c(30,30)
+covariance_matrix_prior <- matrix(c(25, 18.75, 18.75, 25), nrow = 2, ncol = 2, byrow=T)
+L0 <- S0 <- covariance_matrix_prior
+
+nu0<-4
+
+n<-dim(Y)[1] ; ybar<-apply(Y,2,mean)
+Sigma<-cov(Y) ; THETA<-SIGMA<-CONV2COR<-NULL
+YS<-NULL
+set.seed(1)
+S <- 5000
+
+for(s in 1:S) 
+{
+ 
+  ###update theta
+  Ln<-solve( solve(L0) + n*solve(Sigma) ) # STEP 1
+  mun<-Ln%*%( solve(L0)%*%mu0 + n*solve(Sigma)%*%ybar ) # STEP 1
+  theta<-rmvnorm(1,mun,Ln)  # STEP 2
+  ### 
+   
+  ###update Sigma
+  Sn<- S0 + ( t(Y)-c(theta) )%*%t( t(Y)-c(theta) )  # STEP 3
+  Sigma<-solve( rwish(1, nu0+n, solve(Sn)) ) # STEP 4
+  ###
+  
+  ### save results 
+  THETA<-rbind(THETA,theta) ; SIGMA<-rbind(SIGMA,c(Sigma)); CONV2COR<-rbind(CONV2COR, cov2cor(Sigma))
+  ###
+  # cat(s,round(theta,2),round(c(Sigma),2),"\n")
+}
+library(LaplacesDemon)
+
+# Plot the joint distribution of theta_h and theta_w
+joint.density.plot(THETA[,1], THETA[,2], Title="Joint Density Plot",
+     contour=TRUE, color=F)
+
+# Plot the marginal posterior density of the correlation between Y_h and Y_w
+cov <- SIGMA[,2]
+var_h <- SIGMA[,1]
+var_w <- SIGMA[,4]
+cor <- cov/sqrt(var_h*var_w)
+cor <- data.frame(cor)
+ggplot(data=cor, aes(x = cor)) + geom_density()
+
+# Posterior 95% confidence interval for theta_h
+print("Husband")
+quantile(THETA[,1], prob=c(.025,.975))
+
+# Posterior 95% confidence interval for theta_w
+print("Wife")
+quantile(THETA[,2], prob=c(.025,.975))
+
+# Posterior 95% confidence interval for correlation coefficient
+print("Correlation coefficient")
+quantile(cor[,1], prob=c(.025,.975))
+```
+```{r}
+# 4d)
+# Get the data
+Y <- read.csv("https://foxweb.marist.edu/users/duy.nguyen2/agehw.dat", header = T, sep = " ")
+
+mu0 <- c(0,0)
+covariance_matrix_prior <- matrix(c(25, 18.75, 18.75, 25), nrow = 2, ncol = 2, byrow=T)
+S0 <- diag(2)*1000
+L0 <- diag(2)*105
+nu0<-3
+
+n<-dim(Y)[1] ; ybar<-apply(Y,2,mean)
+Sigma<-cov(Y) ; THETA<-SIGMA<-CONV2COR<-NULL
+YS<-NULL
+set.seed(1)
+S <- 5000
+
+for(s in 1:S) 
+{
+ 
+  ###update theta
+  Ln<-solve( solve(L0) + n*solve(Sigma) ) # STEP 1
+  mun<-Ln%*%( solve(L0)%*%mu0 + n*solve(Sigma)%*%ybar ) # STEP 1
+  theta<-rmvnorm(1,mun,Ln)  # STEP 2
+  ### 
+   
+  ###update Sigma
+  Sn<- S0 + ( t(Y)-c(theta) )%*%t( t(Y)-c(theta) )  # STEP 3
+  Sigma<-solve( rwish(1, nu0+n, solve(Sn)) ) # STEP 4
+  ###
+
+  ###
+  YS<-rbind(YS,rmvnorm(1,theta,Sigma)) 
+  ###
+
+  ### save results 
+  THETA<-rbind(THETA,theta) ; SIGMA<-rbind(SIGMA,c(Sigma)); CONV2COR<-rbind(CONV2COR, cov2cor(Sigma))
+  ###
+  # cat(s,round(theta,2),round(c(Sigma),2),"\n")
+}
+cov <- SIGMA[,2]
+var_h <- SIGMA[,1]
+var_w <- SIGMA[,4]
+cor <- cov/sqrt(var_h*var_w)
+cor <- data.frame(cor)
+
+# Posterior 95% confidence interval for theta_h
+print("Husband")
+quantile(THETA[,1], prob=c(.025,.975))
+# Posterior 95% confidence interval for theta_w
+print("Wife")
+quantile(THETA[,2], prob=c(.025,.975))
+# Posterior 95% confidence interval for correlation coefficient
+print("Correlation coefficient")
+quantile(cor[,1], prob=c(.025,.975))
+
+```
+```{r}
+#4e)
+# The difference in the intervals
+# My prior (Husband)[theta]
+abs(40.74153-46.02918)
+# d prior (Husband)
+abs(40.20196-45.77357)
+
+# My prior (Wife)[theta]
+abs(37.66508-42.50514)
+# d prior (Wife)
+abs(37.01812-42.16436)
+
+# My prior [Correlation]
+abs(0.8624781-0.9348951)
+# d prior [Correlation]
+abs(0.7939693-0.9008043)
+# Since my priors appear to have a smaller range in the 
+# 95% confidence interval for theta and correlation, my 
+# priors are better at estimating theta and sigma
+```
+

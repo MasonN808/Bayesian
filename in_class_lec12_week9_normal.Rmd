@@ -1,0 +1,82 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(ggplot2)
+require(gridExtra)
+require(ProbBayes)
+require(tidyverse)
+require(runjags)
+require(coda)
+crcblue <- "#2905a1"
+knitr::opts_chunk$set(echo = TRUE)
+def.chunk.hook  <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- def.chunk.hook(x, options)
+  ifelse(options$size != "normalsize", paste0("\\", options$size,"\n\n", x, "\n\n \\normalsize"), x)
+})
+```
+
+# Installing the necessary packages
+
+```{r, eval = FALSE}
+# install.packages("devtools")
+require(devtools)
+# devtools::install_github("bayesball/ProbBayes")
+
+require(ggplot2)
+require(gridExtra)
+require(ProbBayes)
+require(tidyverse)
+crcblue <- "#2905a1"
+```
+
+# place the model string here
+```{r}
+modelString <- "
+model {
+# likelihood
+for (i in 1:N){
+  y[i] ~ dnorm(mu, phi)
+}
+
+# prior distributions
+mu ~ dnorm(mu_0, phi_0)
+phi ~ dgamma(alpha, beta)
+}"
+```
+
+
+# data
+```{r}
+CEsample <- read_csv("https://foxweb.marist.edu/users/duy.nguyen2/CEsample1.csv")
+y <- CEsample$TotalExpLastQ
+N <- length(y)
+the_data <- list("y" = y, "N" = N, "mu_0" = 5, "phi_0" = 1/1^2, "alpha" = 1, "beta" = 1)
+```
+
+# JAGS code
+```{r}
+posterior <- run.jags(modelString,
+                      data = the_data,
+                      monitor = c("mu", "phi"),
+                      n.chains = 1,
+                      adapt = 1000, 
+                      burnin = 2000,
+                      sample = 5000,
+                      thin = 1)
+summary(posterior)
+```
+# plotting
+```{r}
+plot(posterior
+     )
+```
+

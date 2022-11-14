@@ -167,7 +167,7 @@ rwish<-function(n,nu0,S0)
 setwd("/Users/masonnakamura/Downloads")
 load("/Users/masonnakamura/Downloads/reading.RData")
 Y<-reading
-
+ 
 mu0<-c(50,50)
 L0<-matrix( c(625,312.5,312.5,625),nrow=2,ncol=2)
 

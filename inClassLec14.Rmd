@@ -1,0 +1,41 @@
+---
+title: "inclass14"
+output: html_document
+date: "2022-11-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+d <- read.csv("https://raw.githubusercontent.com/SmilodonCub/MSDS2020_Bridge/master/VonBort.csv")
+table(d$deaths)
+data = c(rep(0,144), rep(1,91), rep(2, 32), rep(3, 11), rep(4, 2))
+
+S <- 5000
+lambda0 <- mean(data)
+b0 <- 2/(lambda0 + 1)
+# b0<-1
+# lambda <- c(rep(NA, S))
+lambda <- c(lambda0, rep(NA, S-1))
+b <- c(b0,  rep(NA, S-1))
+
+for (i in 2:S) {
+  lambda[i] <- rgamma(1, sum(data) + 1, length(data) + b[i-1])
+  b[i] <- rgamma(1, 2, lambda[i]+1)
+}
+# lambda <- lambda[2: length(lambda)]
+print(mean(lambda))
+hist(lambda, breaks=seq(.4,1,.01))
+library(LaplacesDemon)
+
+data.matrix <- matrix(c(lambda, b), ncol = 2)
+
+# Contour plot
+require(ash)
+plot.hdr2d(data.matrix,xlab=expression(theta[1]),ylab=expression(theta[2]), ylim = c(-2,5), xlim = c(.55, .9))
+
+
+```

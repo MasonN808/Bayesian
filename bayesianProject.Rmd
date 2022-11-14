@@ -1,0 +1,24 @@
+---
+title: "Bayesian Project (Optional)"
+output: html_document
+date: "2022-11-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+dramadata = read.csv("https://foxweb.marist.edu/users/duy.nguyen2/KDramaData.csv", header=T)
+
+KBSdrama = dramadata[dramadata$Producer==2,]
+KBSdrama$Schedule = as.factor(KBSdrama$Schedule)
+
+# Priors
+....
+
+S <- 5000
+for (i in 2:S) {
+  
+}
+```

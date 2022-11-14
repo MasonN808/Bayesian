@@ -1,0 +1,275 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Doing the lab question in class
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+require(ggplot2)
+require(gridExtra)
+require(ProbBayes)
+require(tidyverse)
+require(runjags)
+require(coda)
+crcblue <- "#2905a1"
+knitr::opts_chunk$set(echo = TRUE)
+def.chunk.hook  <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- def.chunk.hook(x, options)
+  ifelse(options$size != "normalsize", paste0("\\", options$size,"\n\n", x, "\n\n \\normalsize"), x)
+})
+```
+
+# Installing the necessary packages
+
+```{r, eval = FALSE}
+# install.packages("devtools")
+require(devtools)
+# devtools::install_github("bayesball/ProbBayes")
+
+require(ggplot2)
+require(gridExtra)
+require(ProbBayes)
+require(tidyverse)
+crcblue <- "#2905a1"
+```
+## Ratings by Schedule
+
+```{r message = FALSE}
+dramadata = read.csv("https://foxweb.marist.edu/users/duy.nguyen2/KDramaData.csv", header=T)
+
+KBSdrama = dramadata[dramadata$Producer==2,]
+KBSdrama$Schedule = as.factor(KBSdrama$Schedule)
+```
+
+```{r}
+modelString <-"
+model {
+  ## likelihood
+  for (i in 1:N){
+    y[i] ~ dnorm(mu_j[schedule[i]], invsigma2)
+  }
+  
+  ## priors
+  for (j in 1:J){
+    mu_j[j] ~ dnorm(mu, invtau2)T(0,)
+  }
+  invsigma2 ~ dgamma(a_g, b_g)
+  sigma <- sqrt(pow(invsigma2, -1))
+  
+  ## hyperpriors
+  mu ~ dnorm(mu0, 1/g0^2)T(0,)
+  invtau2 ~ dgamma(a_t, b_t)
+  tau <- sqrt(pow(invtau2, -1))
+}
+"
+
+
+```
+
+```{r message = FALSE}
+y = KBSdrama$Rating   
+schedule = KBSdrama$Schedule  
+N = length(y)  
+J = length(unique(schedule)) 
+
+# for the replication of ~set.seed(123)
+initsfunction <- function(chain){
+  .RNG.seed <- c(1,2)[chain]
+  .RNG.name <- c("base::Super-Duper",
+                 "base::Wichmann-Hill")[chain]
+  return(list(.RNG.seed=.RNG.seed,
+              .RNG.name=.RNG.name))
+}
+
+the_data <- list("y" = y, "schedule" = schedule, "N" = N, "J" = J, 
+                 "mu0" = 0.1, "g0" = 0.5, 
+                 "a_t" = 1, "b_t" = 1,
+                 "a_g" = 1, "b_g" = 1)
+
+posterior <- run.jags(modelString,
+                      n.chains = 1,
+                      data = the_data,
+                      monitor = c("mu", "tau", "mu_j", "sigma"),
+                      adapt = 1000,
+                      burnin = 5000,
+                      sample = 5000,
+                      thin = 1, 
+                      inits = initsfunction)
+summary(posterior)
+plot(posterior, vars = "mu_j[1]")
+```
+# For log normal distribution below:
+
+```{r}
+modelString <-"
+model {
+  ## likelihood
+  for (i in 1:N){
+    y[i] ~ dnorm(mu_j[schedule[i]], invsigma2)
+  }
+  
+  ## priors
+  for (j in 1:J){
+    mu_j[j] ~ dlnorm(mu, invtau2)
+  }
+  invsigma2 ~ dgamma(a_g, b_g)
+  sigma <- sqrt(pow(invsigma2, -1))
+  
+  ## hyperpriors
+  mu ~ dlnorm(mu0, 1/g0^2)
+  invtau2 ~ dgamma(a_t, b_t)
+  tau <- sqrt(pow(invtau2, -1))
+}
+"
+
+
+```
+
+```{r message = FALSE}
+y = KBSdrama$Rating   
+schedule = KBSdrama$Schedule  
+N = length(y)  
+J = length(unique(schedule)) 
+
+# for the replication of ~set.seed(123)
+initsfunction <- function(chain){
+  .RNG.seed <- c(1,2)[chain]
+  .RNG.name <- c("base::Super-Duper",
+                 "base::Wichmann-Hill")[chain]
+  return(list(.RNG.seed=.RNG.seed,
+              .RNG.name=.RNG.name))
+}
+
+the_data <- list("y" = y, "schedule" = schedule, "N" = N, "J" = J, 
+                 "mu0" = 0.1, "g0" = 0.5, 
+                 "a_t" = 1, "b_t" = 1,
+                 "a_g" = 1, "b_g" = 1)
+
+posterior <- run.jags(modelString,
+                      n.chains = 1,
+                      data = the_data,
+                      monitor = c("mu", "tau", "mu_j", "sigma"),
+                      adapt = 1000,
+                      burnin = 5000,
+                      sample = 5000,
+                      thin = 1, 
+                      inits = initsfunction)
+summary(posterior)
+plot(posterior, vars = "mu_j[1]")
+```
+# For custom prior distribution for mus
+
+```{r}
+modelString <-"
+model {
+  ## likelihood
+  for (i in 1:N){
+    y[i] ~ dnorm(mu_j[schedule[i]], invsigma2)
+  }
+  
+  ## priors
+  for (j in 1:J){
+    mu_j[j] ~ dgamma(mu, invtau2)
+  }
+  invsigma2 ~ dgamma(a_g, b_g)
+  sigma <- sqrt(pow(invsigma2, -1))
+  
+  ## hyperpriors
+  mu ~ dlnorm(mu0, 1/g0^2)
+  invtau2 ~ dgamma(a_t, b_t)
+  tau <- sqrt(pow(invtau2, -1))
+}
+"
+```
+
+```{r message = FALSE}
+y = KBSdrama$Rating   
+schedule = KBSdrama$Schedule  
+N = length(y)  
+J = length(unique(schedule)) 
+
+# for the replication of ~set.seed(123)
+initsfunction <- function(chain){
+  .RNG.seed <- c(1,2)[chain]
+  .RNG.name <- c("base::Super-Duper",
+                 "base::Wichmann-Hill")[chain]
+  return(list(.RNG.seed=.RNG.seed,
+              .RNG.name=.RNG.name))
+}
+
+the_data <- list("y" = y, "schedule" = schedule, "N" = N, "J" = J, 
+                 "mu0" = 0.1, "g0" = 0.5, 
+                 "a_t" = 1, "b_t" = 1,
+                 "a_g" = 1, "b_g" = 1)
+
+posterior <- run.jags(modelString,
+                      n.chains = 1,
+                      data = the_data,
+                      monitor = c("mu", "tau", "mu_j", "sigma"),
+                      adapt = 1000,
+                      burnin = 5000,
+                      sample = 5000,
+                      thin = 1, 
+                      inits = initsfunction)
+summary(posterior)
+plot(posterior, vars = "mu_j[1]")
+```
+# Week 10 ("Gibbs/JAGS sampler for Gamma-Gamma-Poisson") step 5:
+```{r}
+d <- read.csv("https://raw.githubusercontent.com/SmilodonCub/MSDS2020_Bridge/master/VonBort.csv")
+head(d)
+table(d$deaths)
+data = c(rep(0,144), rep(1,91), rep(2, 32), rep(3, 11), rep(4, 2))
+print(length(d$deaths))
+modelString <-"
+model {
+  # likelihood
+  for (i in 1:N){
+    y[i] ~ dpois(lambda)
+  }
+  
+  # priors
+  for (j in 1:J){
+    lambda ~ dgamma(1, b)
+  }
+  
+  # hyper prior
+  b ~ dgamma(1, 1)
+}
+"
+
+horsekicks = data
+y = horsekicks
+N = length(horsekicks)  
+J = 1
+
+# for the replication of ~set.seed(123)
+initsfunction <- function(chain){
+  .RNG.seed <- c(1,2)[chain]
+  .RNG.name <- c("base::Super-Duper",
+                 "base::Wichmann-Hill")[chain]
+  return(list(.RNG.seed=.RNG.seed,
+              .RNG.name=.RNG.name))
+}
+
+the_data <- list("y" = horsekicks, "N" = N, "J" = J)
+
+posterior <- run.jags(modelString,
+                      n.chains = 1,
+                      data = the_data,
+                      monitor = c("lambda"),
+                      adapt = 1000,
+                      burnin = 5000,
+                      sample = 5000,
+                      thin = 1, 
+                      inits = initsfunction)
+summary(posterior)
+plot(posterior, vars = "lambda")
+
+# Use this to replicate the data (And it works)
+table(rpois(280, .7))
+```
+
